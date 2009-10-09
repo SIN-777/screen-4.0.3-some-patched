@@ -1,0 +1,26 @@
+*** display.c.orig	Fri Sep  3 16:50:30 2004
+--- display.c	Fri Sep  3 16:54:03 2004
+***************
+*** 2782,2788 ****
+  #ifdef DW_CHARS
+        if (dw_right(ml, x, D_encoding))
+  	{
+! 	  x--;
+  	  debug1("DisplayLine on right side of dw char- x now %d\n", x);
+  	  GotoPos(x, y);
+  	}
+--- 2782,2795 ----
+  #ifdef DW_CHARS
+        if (dw_right(ml, x, D_encoding))
+  	{
+! 	  if (x>0)
+! 	    {
+! 	      x--;
+! 	    }
+! 	  else
+! 	    {
+! 	      x++;
+! 	    }
+  	  debug1("DisplayLine on right side of dw char- x now %d\n", x);
+  	  GotoPos(x, y);
+  	}

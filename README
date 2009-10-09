@@ -1,2 +1,80 @@
+./screen-4.0.3/*
+> オリジナルの screen-4.0.3.tar.gz に対して同階層の以下patchを以下の順で当てたもの
+  > screen-4.0.2-deadlock-patch
+  > screen-4.0.2-hankanacopy-patch
+  > screen-4.0.2-patch-cjkwidth-cvs-2006052001
+  > screen-4.0.2-vertical-patch
+  > screen-4.0.3-box-drawing-cahrs-fix-for-utf-patch
+> そのまま cd screen-4.0.3/ して ./configure --(options_you_need) で
+  パッチが当たった状態のscreen-4.0.3をビルド可能
 
-HELLO github
+-----
+> screen-4.0.2-deadlock-patch
+デッドロック防止パッチ
+http://www.dekaino.net/screen/01install.html
+
+> screen-4.0.2-hankanacopy-patch
+半角カナ(JIS-X-0201 右半面)copy/paste文字化け修正パッチ
+http://www.dekaino.net/screen/01install.html
+
+> screen-4.0.2-patch-cjkwidth-cvs-2006052001
+utf-8におけるCJKコード文字幅の誤認識修正パッチ
+http://www.dekaino.net/screen/01install.html
+
+> screen-4.0.2-vertical-patch
+垂直分割パッチ
+http://lists.gnu.org/archive/html/screen-devel/2005-12/msg00004.html
+（このままだとpatch通らないため一部修正済み）
+^A(cmd) -> V  で垂直分割します。
+ウィンドウサイズを変更すると分割解除されます。
+
+> screen-4.0.3-box-drawing-cahrs-fix-for-utf-patch
+http://d.hatena.ne.jp/niha/20090130#1233302327
+（コレをpatchにしたもの）
+curses系インターフェースがUTF8な環境でズレるのを改善するパッチ
+2カラムの罫線を -+ で置き換えます。
+
+
+-----
+コンパイル時のおすすめ
+$ ./configure --enable-colors256 --prefix=/usr/local
+> 256色対応
+> ./configure --help 見ると、--prefixのデフォルトは/usr/local と書いてあるけれども
+  なぜか --prefis=./ としてインストールが始まるので--prefix指定は必須
+
+
+-----
+実行済みコマンド
+
+*/:$ tar zcf screen-4.0.3.tar.gz
+*/:$ mv screen-4.0.3/ screen-4.0.3
+*/:$ cd screen-4.0.3/
+
+*/screen-4.0.3:$  patch < screen-4.0.2-deadlock-patch
+patching file display.c
+
+*/screen-4.0.3$  patch < screen-4.0.2-hankanacopy-patch
+patching file encoding.c
+Hunk #1 succeeded at 1324 (offset 8 lines).
+
+*/screen-4.0.3:$ patch < screen-4.0.2-patch-cjkwidth-cvs-2006052001
+patching file ansi.c
+patching file comm.c
+patching file encoding.c
+patching file process.c
+Hunk #1 succeeded at 103 (offset -1 lines).
+Hunk #2 succeeded at 3824 (offset -49 lines).
+patching file screen.c
+Hunk #1 succeeded at 221 (offset -1 lines).
+Hunk #2 succeeded at 472 (offset -1 lines).
+Hunk #3 succeeded at 769 (offset -1 lines).
+
+*/screen-4.0.3:$  patch < screen-4.0.2-vertical-patch
+patching file comm.c
+Hunk #1 succeeded at 312 (offset 3 lines).
+patching file display.c
+Hunk #1 succeeded at 3927 (offset 7 lines).
+patching file process.c
+Hunk #1 succeeded at 551 (offset 2 lines).
+Hunk #2 succeeded at 3656 (offset -9 lines).
+

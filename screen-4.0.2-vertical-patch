@@ -1,0 +1,132 @@
+ommon subdirectories: screen-4.0.3/src/BUGS and my-screen-4.0.3/src/BUGS
+diff -u screen-4.0.3/src/comm.c my-screen-4.0.3/src/comm.c
+--- screen-4.0.3/src/comm.c     2005-12-16 19:06:39.000000000 +0000
++++ my-screen-4.0.3/src/comm.c  2005-12-18 17:18:47.954749576 +0000
+@@ -309,6 +309,7 @@
+   { "vbellwait",	ARGS_1 },
+   { "verbose",		ARGS_01 },
+   { "version",		ARGS_0 },
++  { "vert_split",              NEED_DISPLAY|ARGS_0 },
+   { "wall",		NEED_DISPLAY|ARGS_1},
+   { "width",		ARGS_0123 },
+   { "windowlist",	NEED_DISPLAY|ARGS_012 },
+Common subdirectories: screen-4.0.3/src/config and my-screen-4.0.3/src/config
+Common subdirectories: screen-4.0.3/src/CONVERT and my-screen-4.0.3/src/CONVERT
+Common subdirectories: screen-4.0.3/src/CVS and my-screen-4.0.3/src/CVS
+diff -u screen-4.0.3/src/display.c my-screen-4.0.3/src/display.c
+--- screen-4.0.3/src/display.c  2005-12-16 18:51:07.000000000 +0000
++++ my-screen-4.0.3/src/display.c       2005-12-18 17:16:40.032196760 +0000
+@@ -3920,3 +3920,83 @@
+ }
+ 
+ #endif
++
++int
++AddVerticalCanvas()
++{   /*! Add a new canvas with a vertical split.
++    */
++
++    int             canvas_count;  /* Canvasses with same y offset. */
++    struct canvas  *cv;            /* Index into D_cvlist. */
++    int             x_start;       /* Start position of a canvas. */
++
++    /* Count the canvasses that have the same horizontal position as
++    the canvas with the focus. */
++    for (cv = D_cvlist, canvas_count = 0; cv; cv = cv->c_next) {
++        if (cv -> c_ys == D_forecv -> c_ys)
++            canvas_count++;
++    }
++    canvas_count++;
++
++    debug2("canvas_count = %d, width = %d\n", canvas_count, D_width);
++
++    /* Return EXIT_FAILURE if the screen isn't wide enough to split. */
++    if (D_width / canvas_count <= 1)
++        return EXIT_FAILURE;
++
++    ASSERT(D_forecv);
++
++    /* Allocate a new canvas. */
++    debug("initializing new canvas\n");
++    if ((cv = (struct canvas *) calloc(1, sizeof *cv)) == 0)
++        return EXIT_FAILURE;
++
++    /* Insert the new canvas after the current foreground. */
++    cv -> c_next = D_forecv->c_next;
++    D_forecv -> c_next = cv;
++
++    cv -> c_xs               = D_forecv -> c_xs;
++    cv -> c_xe               = D_forecv -> c_xe;
++    cv -> c_ys               = D_forecv -> c_ys;
++    cv -> c_ye               = D_forecv -> c_ye;
++    cv -> c_xoff             = D_forecv -> c_xoff;
++    cv -> c_yoff             = D_forecv -> c_yoff;
++    cv -> c_display          = display;
++    cv -> c_vplist           = 0;
++    cv -> c_captev.type      = EV_TIMEOUT;
++    cv -> c_captev.data      = (char *) cv;
++    cv -> c_captev.handler   = cv_winid_fn;
++
++    cv -> c_blank.l_cvlist   = cv;
++    cv -> c_blank.l_width    = cv->c_xe - cv->c_xs + 1;
++    cv -> c_blank.l_height   = cv->c_ye - cv->c_ys + 1;
++    cv -> c_blank.l_x        = cv->c_blank.l_y = 0;
++    cv -> c_blank.l_layfn    = &BlankLf;
++    cv -> c_blank.l_data     = 0;
++    cv -> c_blank.l_next     = 0;
++    cv -> c_blank.l_bottom   = &cv->c_blank;
++    cv -> c_blank.l_blocking = 0;
++    cv -> c_layer            = &cv->c_blank;
++    cv -> c_lnext            = 0;
++
++    /* Reset the width of each region. */
++    x_start = 0;
++    for (cv = D_cvlist; cv; cv = cv->c_next) {
++        if (cv -> c_ys == D_forecv -> c_ys) {
++            int this_width; /* new width of cv */
++
++            this_width = D_width / canvas_count - 1;
++            cv -> c_xs = x_start;
++            cv -> c_xe = x_start + this_width - 1;
++            cv -> c_xoff = x_start;
++            x_start += this_width + 1;
++            debug3(" c_xs = %d, x_xe = %d, xoff = %d\n",
++                cv -> c_xs, cv -> c_xe, cv-> c_xoff);
++        }
++    }
++
++    RethinkDisplayViewports();
++    ResizeLayersToCanvases();
++    return 0;
++}
++
+Common subdirectories: screen-4.0.3/src/doc and my-screen-4.0.3/src/doc
+Common subdirectories: screen-4.0.3/src/etc and my-screen-4.0.3/src/etc
+Common subdirectories: screen-4.0.3/src/PATCHES and my-screen-4.0.3/src/PATCHES
+diff -u screen-4.0.3/src/process.c my-screen-4.0.3/src/process.c
+--- screen-4.0.3/src/process.c  2005-12-16 19:06:39.000000000 +0000
++++ my-screen-4.0.3/src/process.c       2005-12-18 17:18:06.336076576 +0000
+@@ -549,6 +549,7 @@
+   ktab['B'].nr = RC_POW_BREAK;
+   ktab['_'].nr = RC_SILENCE;
+   ktab['S'].nr = RC_SPLIT;
++  ktab['V'].nr = RC_VERT_SPLIT;
+   ktab['Q'].nr = RC_ONLY;
+   ktab['X'].nr = RC_REMOVE;
+   ktab['F'].nr = RC_FIT;
+@@ -3664,6 +3665,10 @@
+       AddCanvas();
+       Activate(-1);
+       break;
++    case RC_VERT_SPLIT:
++      AddVerticalCanvas();
++      Activate(-1);
++      break;
+     case RC_REMOVE:
+       RemCanvas();
+       Activate(-1);
+Common subdirectories: screen-4.0.3/src/terminfo and 
+my-screen-4.0.3/src/terminfo
+Common subdirectories: screen-4.0.3/src/TEST and my-screen-4.0.3/src/TEST
+Common subdirectories: screen-4.0.3/src/utf8encodings and 
+my-screen-4.0.3/src/utf8encodings
